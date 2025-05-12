@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 如果发生移动，添加新元素并检查游戏状态
         if (moved) {
-            addRandomElement();
+            // addRandomElement();
             checkGameState();
         }
         
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (moved) {
-            addRandomElement();
+            // addRandomElement();
             checkGameState();
         }
     }
