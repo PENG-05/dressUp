@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         hintText.textContent = '游戏开始！';
+        setTimeout(updateHint, 1500); // 短暂显示开始信息后更新提示
     }
     
     function pauseGame() {
@@ -245,6 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.grid-item').forEach(item => {
             item.addEventListener('click', handleCellClick);
         });
+        
+        // 初始游戏后更新提示
+        if (gameState === 'playing') {
+            updateHint();
+        }
     }
     
     // 点击格子处理
@@ -442,6 +448,9 @@ document.addEventListener('DOMContentLoaded', () => {
         score += newValue;
         scoreDisplay.textContent = score;
         
+        // 更新提示
+        updateHint();
+        
         return true;
     }
     
@@ -469,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         updateDisplay();
+        if (moved) updateHint();
         return moved;
     }
     
@@ -495,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         updateDisplay();
+        if (moved) updateHint();
         return moved;
     }
     
@@ -521,6 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         updateDisplay();
+        if (moved) updateHint();
         return moved;
     }
     
@@ -547,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         updateDisplay();
+        if (moved) updateHint();
         return moved;
     }
     
@@ -572,35 +585,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 检查是否还有空格
+        let hasEmptyCell = false;
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
                 if (board[i][j] === 0) {
-                    return; // 还有空格，游戏继续
+                    hasEmptyCell = true;
+                    break;
                 }
             }
+            if (hasEmptyCell) break;
         }
         
         // 检查是否有可合并的格子
+        let hasMergeable = false;
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
                 if (
                     (i < gridSize - 1 && board[i][j] === board[i + 1][j] && board[i][j] !== maxValue) || 
                     (j < gridSize - 1 && board[i][j] === board[i][j + 1] && board[i][j] !== maxValue)
                 ) {
-                    return; // 有可合并的格子，游戏继续
+                    hasMergeable = true;
+                    break;
                 }
             }
+            if (hasMergeable) break;
         }
         
-        // 没有空格且没有可合并的格子，游戏结束
-        hintText.textContent = "游戏结束！没有更多的移动可以进行。";
+        // 游戏结束条件
+        if (!hasEmptyCell && !hasMergeable) {
+            hintText.textContent = "游戏结束！没有更多的移动可以进行。";
+            return;
+        }
+        
+        // 游戏继续，更新提示
+        updateHint();
     }
     
     // 显示提示
     function showHint() {
         const hint = findBestMove();
         if (hint) {
-            hintText.textContent = `提示: 考虑将 (${hint.fromX+1}, ${hint.fromY+1}) 的元素与 (${hint.toX+1}, ${hint.toY+1}) 的元素合并`;
+            if (hint.type === "direction") {
+                hintText.textContent = `提示: ${hint.suggestion}`;
+            } else {
+                hintText.textContent = `提示: 考虑将 (${hint.fromX+1}, ${hint.fromY+1}) 的元素与 (${hint.toX+1}, ${hint.toY+1}) 的元素合并`;
+            }
         } else {
             hintText.textContent = "没有找到最优移动";
         }
@@ -608,41 +637,263 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 寻找最佳移动
     function findBestMove() {
-        let bestMoves = [];
+        // 定义目标角落 - 右下角
+        const targetCorner = {x: gridSize - 1, y: gridSize - 1};
         
-        // 检查所有相邻且数值相同的格子
+        // 按优先级排序的可能移动
+        let possibleMoves = [];
+        
+        // 1. 寻找所有可能的合并
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
                 if (board[i][j] === 0) continue;
                 
                 // 检查右侧
                 if (j < gridSize - 1 && board[i][j] === board[i][j + 1] && board[i][j] !== maxValue) {
-                    bestMoves.push({
+                    possibleMoves.push({
                         fromX: i,
                         fromY: j,
                         toX: i,
                         toY: j + 1,
-                        value: board[i][j]
+                        value: board[i][j],
+                        distanceToCorner: Math.abs(i - targetCorner.x) + Math.abs(j + 1 - targetCorner.y),
+                        priority: calculateMovePriority(i, j, i, j + 1, board[i][j])
                     });
                 }
                 
                 // 检查下方
                 if (i < gridSize - 1 && board[i][j] === board[i + 1][j] && board[i][j] !== maxValue) {
-                    bestMoves.push({
+                    possibleMoves.push({
                         fromX: i,
                         fromY: j,
                         toX: i + 1,
                         toY: j,
-                        value: board[i][j]
+                        value: board[i][j],
+                        distanceToCorner: Math.abs(i + 1 - targetCorner.x) + Math.abs(j - targetCorner.y),
+                        priority: calculateMovePriority(i, j, i + 1, j, board[i][j])
                     });
                 }
             }
         }
         
-        // 按照数值从大到小排序
-        bestMoves.sort((a, b) => b.value - a.value);
+        // 没有可能的合并，返回移动建议
+        if (possibleMoves.length === 0) {
+            return getBestDirectionMove();
+        }
         
-        return bestMoves.length > 0 ? bestMoves[0] : null;
+        // 按照优先级排序
+        possibleMoves.sort((a, b) => b.priority - a.priority);
+        
+        return possibleMoves.length > 0 ? possibleMoves[0] : null;
+    }
+
+    // 计算移动的优先级
+    function calculateMovePriority(fromX, fromY, toX, toY, value) {
+        let priority = 0;
+        
+        // 基础优先级：数值越大优先级越高
+        priority += value * 10;
+        
+        // 目标角落是右下角
+        const targetCorner = {x: gridSize - 1, y: gridSize - 1};
+        
+        // 距离角落越近优先级越高(对大数字)
+        const distanceToCorner = Math.abs(toX - targetCorner.x) + Math.abs(toY - targetCorner.y);
+        if (value >= 5) {  // 对于5及以上的数值，鼓励向角落移动
+            priority -= distanceToCorner * 5;  // 距离越远，扣的分越多
+        } else {
+            // 对于小数字，我们更关心它们的合并可能性
+            priority += (4 - distanceToCorner) * 2;  // 小数字适当远离角落
+        }
+        
+        // 避免在边缘形成不同值的"锯齿状"布局
+        if ((toX === 0 || toX === gridSize - 1) && value < 5) {
+            priority -= 15;  // 降低小数字靠边的优先级
+        }
+        
+        // 特殊处理1和2，鼓励它们尽快合并
+        if (value <= 2) {
+            priority += 20;  // 提高1和2合并的优先级
+        }
+        
+        return priority;
+    }
+
+    // 当没有直接合并时，获取最佳移动方向的建议
+    function getBestDirectionMove() {
+        // 分析当前布局
+        const targetCorner = {x: gridSize - 1, y: gridSize - 1};
+        const hasLargeNumberInCorner = board[targetCorner.x][targetCorner.y] >= 5;
+        
+        // 评估每个方向的移动优势
+        let directions = {
+            right: 0,
+            down: 0, 
+            left: 0,
+            up: 0
+        };
+        
+        // 评估横向移动
+        let hasRightMerge = false;
+        let hasLeftMerge = false;
+        for (let i = 0; i < gridSize; i++) {
+            // 检查向右移动是否能合并或移动
+            let canMoveRight = false;
+            for (let j = gridSize - 2; j >= 0; j--) {
+                if (board[i][j] !== 0 && (board[i][j+1] === 0 || board[i][j+1] === board[i][j])) {
+                    canMoveRight = true;
+                    if (board[i][j+1] === board[i][j]) {
+                        hasRightMerge = true;
+                        // 给较大数字的合并更高权重
+                        directions.right += board[i][j] * 2;
+                    } else {
+                        directions.right += 1;
+                    }
+                }
+            }
+            
+            // 检查向左移动是否能合并或移动
+            let canMoveLeft = false;
+            for (let j = 1; j < gridSize; j++) {
+                if (board[i][j] !== 0 && (board[i][j-1] === 0 || board[i][j-1] === board[i][j])) {
+                    canMoveLeft = true;
+                    if (board[i][j-1] === board[i][j]) {
+                        hasLeftMerge = true;
+                        directions.left += board[i][j] * 2;
+                    } else {
+                        directions.left += 1;
+                    }
+                }
+            }
+        }
+        
+        // 评估纵向移动
+        let hasDownMerge = false;
+        let hasUpMerge = false;
+        for (let j = 0; j < gridSize; j++) {
+            // 检查向下移动是否能合并或移动
+            let canMoveDown = false;
+            for (let i = gridSize - 2; i >= 0; i--) {
+                if (board[i][j] !== 0 && (board[i+1][j] === 0 || board[i+1][j] === board[i][j])) {
+                    canMoveDown = true;
+                    if (board[i+1][j] === board[i][j]) {
+                        hasDownMerge = true;
+                        directions.down += board[i][j] * 2;
+                    } else {
+                        directions.down += 1;
+                    }
+                }
+            }
+            
+            // 检查向上移动是否能合并或移动
+            let canMoveUp = false;
+            for (let i = 1; i < gridSize; i++) {
+                if (board[i][j] !== 0 && (board[i-1][j] === 0 || board[i-1][j] === board[i][j])) {
+                    canMoveUp = true;
+                    if (board[i-1][j] === board[i][j]) {
+                        hasUpMerge = true;
+                        directions.up += board[i][j] * 2;
+                    } else {
+                        directions.up += 1;
+                    }
+                }
+            }
+        }
+        
+        // 右下角策略加权
+        if (hasLargeNumberInCorner) {
+            // 如果右下角有大数字，优先选择能维持该数字在角落的方向
+            directions.right += 10;
+            directions.down += 10;
+        } else {
+            // 促进向右下角移动的策略
+            directions.right += 5;
+            directions.down += 5;
+        }
+        
+        // 对于小数字(1和2)，增加其合并权重
+        if (hasRightMerge && countSmallNumbers().right > 0) directions.right += 15;
+        if (hasDownMerge && countSmallNumbers().down > 0) directions.down += 15;
+        if (hasLeftMerge && countSmallNumbers().left > 0) directions.left += 5;
+        if (hasUpMerge && countSmallNumbers().up > 0) directions.up += 5;
+        
+        // 找出得分最高的方向
+        let bestDirection = "right"; // 默认向右
+        let maxScore = directions.right;
+        
+        if (directions.down > maxScore) {
+            bestDirection = "down";
+            maxScore = directions.down;
+        }
+        if (directions.left > maxScore) {
+            bestDirection = "left";
+            maxScore = directions.left;
+        }
+        if (directions.up > maxScore) {
+            bestDirection = "up";
+            maxScore = directions.up;
+        }
+        
+        // 返回具体的方向指示
+        let directionMap = {
+            "right": "向右移动 ➡️",
+            "down": "向下移动 ⬇️",
+            "left": "向左移动 ⬅️",
+            "up": "向上移动 ⬆️"
+        };
+        
+        return {
+            suggestion: directionMap[bestDirection],
+            type: "direction",
+            direction: bestDirection
+        };
+    }
+    
+    // 计算每个方向上的小数字(1和2)数量
+    function countSmallNumbers() {
+        let counts = {
+            right: 0,
+            down: 0,
+            left: 0,
+            up: 0
+        };
+        
+        // 统计右边缘的小数字
+        for (let i = 0; i < gridSize; i++) {
+            if (board[i][gridSize-1] === 1 || board[i][gridSize-1] === 2) {
+                counts.right++;
+            }
+        }
+        
+        // 统计下边缘的小数字
+        for (let j = 0; j < gridSize; j++) {
+            if (board[gridSize-1][j] === 1 || board[gridSize-1][j] === 2) {
+                counts.down++;
+            }
+        }
+        
+        // 统计左边缘的小数字
+        for (let i = 0; i < gridSize; i++) {
+            if (board[i][0] === 1 || board[i][0] === 2) {
+                counts.left++;
+            }
+        }
+        
+        // 统计上边缘的小数字
+        for (let j = 0; j < gridSize; j++) {
+            if (board[0][j] === 1 || board[0][j] === 2) {
+                counts.up++;
+            }
+        }
+        
+        return counts;
+    }
+
+    // 在游戏状态改变时自动更新提示
+    function updateHint() {
+        if (gameState === 'playing') {
+            showHint();
+        }
     }
 
 });
