@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (deleteMode) {
             deleteModeBtn.classList.add('delete-mode');
-            hintText.textContent = '删除模式：点击单元格删除元素';
+            hintText.textContent = '删除模式：点击单元格删除元素；再次点击删除模式即可退出删除模式！';
             
             // 取消选择
             if (selectedElement) {
