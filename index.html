@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>装扮游戏</title>
+    <title>2048</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>装扮合成游戏</h1>
+        <h1>明星装扮</h1>
         <div class="game-info">
             <div class="score">分数: <span id="score">0</span></div>
-            <button id="new-game">新游戏</button>
+            <button id="start-game">开始游戏</button>
+            <button id="pause-game" disabled>暂停游戏</button>
+            <button id="delete-mode">删除模式</button>
+            <button id="new-game">重置布局</button>
             <button id="hint">提示</button>
         </div>
         <div id="hint-text" class="hint-text"></div>
@@ -73,6 +76,18 @@
             </div>
         </div>        
     </div>
+
+    <!-- 图片选择弹窗 -->
+    <div id="image-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>选择图片</h2>
+            <div id="images-container" class="images-grid">
+                <!-- 图片将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+    
     <script src="game.js"></script>
 </body>
 </html>

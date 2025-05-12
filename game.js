@@ -7,12 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let board = [];
     let selectedElement = null;
     
+    // 游戏状态控制
+    let gameState = 'notStarted'; // 可能的值: 'notStarted', 'playing', 'paused'
+    let deleteMode = false;
+    
+    // 当前选中的单元格(用于弹窗选图)
+    let currentCell = null;
+    
     // DOM 元素
     const gameBoard = document.getElementById('game-board');
     const scoreDisplay = document.getElementById('score');
     const newGameBtn = document.getElementById('new-game');
     const hintBtn = document.getElementById('hint');
     const hintText = document.getElementById('hint-text');
+    const startGameBtn = document.getElementById('start-game');
+    const pauseGameBtn = document.getElementById('pause-game');
+    const deleteModeBtn = document.getElementById('delete-mode');
+    const imageModal = document.getElementById('image-modal');
+    const closeModal = document.querySelector('.close');
+    const imagesContainer = document.getElementById('images-container');
     
     // 初始化游戏
     initGame();
@@ -20,6 +33,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 事件监听
     newGameBtn.addEventListener('click', initGame);
     hintBtn.addEventListener('click', showHint);
+    startGameBtn.addEventListener('click', startGame);
+    pauseGameBtn.addEventListener('click', pauseGame);
+    deleteModeBtn.addEventListener('click', toggleDeleteMode);
+    closeModal.addEventListener('click', () => {
+        imageModal.style.display = 'none';
+    });
+    
+    // 点击弹窗外部关闭弹窗
+    window.addEventListener('click', (event) => {
+        if (event.target === imageModal) {
+            imageModal.style.display = 'none';
+        }
+    });
     
     // 键盘事件
     document.addEventListener('keydown', handleKeyPress);
@@ -38,8 +64,65 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('touchmove', handleDragMove);
     document.addEventListener('touchend', handleDragEnd);
     
+    // 游戏状态控制函数
+    function startGame() {
+        gameState = 'playing';
+        startGameBtn.disabled = true;
+        pauseGameBtn.disabled = false;
+        document.body.classList.remove('game-not-started', 'game-paused');
+        
+        // 退出删除模式
+        if (deleteMode) {
+            toggleDeleteMode();
+        }
+        
+        hintText.textContent = '游戏开始！';
+    }
+    
+    function pauseGame() {
+        gameState = 'paused';
+        startGameBtn.disabled = false;
+        pauseGameBtn.disabled = true;
+        document.body.classList.add('game-paused');
+        document.body.classList.remove('game-not-started');
+        
+        // 退出删除模式
+        if (deleteMode) {
+            toggleDeleteMode();
+        }
+        
+        hintText.textContent = '游戏已暂停。';
+    }
+    
+    function toggleDeleteMode() {
+        deleteMode = !deleteMode;
+        
+        if (deleteMode) {
+            deleteModeBtn.classList.add('delete-mode');
+            hintText.textContent = '删除模式：点击单元格删除元素';
+            
+            // 取消选择
+            if (selectedElement) {
+                selectedElement.classList.remove('selected');
+                selectedElement = null;
+            }
+        } else {
+            deleteModeBtn.classList.remove('delete-mode');
+            
+            // 移除所有删除选择状态
+            document.querySelectorAll('.selected-for-delete').forEach(el => {
+                el.classList.remove('selected-for-delete');
+            });
+            
+            hintText.textContent = '';
+        }
+    }
+    
     // 拖拽开始
     function handleDragStart(event) {
+        // 只有在游戏进行时才允许拖拽
+        if (gameState !== 'playing') return;
+        
         event.preventDefault();
         
         // 获取触摸或鼠标坐标
@@ -56,13 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 拖拽移动
     function handleDragMove(event) {
-        if (!isDragging) return;
+        if (!isDragging || gameState !== 'playing') return;
         event.preventDefault();
     }
     
     // 拖拽结束
     function handleDragEnd(event) {
-        if (!isDragging) return;
+        if (!isDragging || gameState !== 'playing') return;
         event.preventDefault();
         
         let endX, endY;
@@ -118,6 +201,20 @@ document.addEventListener('DOMContentLoaded', () => {
         score = 0;
         scoreDisplay.textContent = '0';
         hintText.textContent = '';
+        gameState = 'notStarted';
+        
+        // 更新按钮状态
+        startGameBtn.disabled = false;
+        pauseGameBtn.disabled = true;
+        
+        // 添加样式表示游戏未开始
+        document.body.classList.add('game-not-started');
+        document.body.classList.remove('game-paused');
+        
+        // 退出删除模式
+        if (deleteMode) {
+            toggleDeleteMode();
+        }
         
         // 清空选择
         if (selectedElement) {
@@ -138,7 +235,13 @@ document.addEventListener('DOMContentLoaded', () => {
         addRandomElement();
         addRandomElement();
         
-        // 添加点击事件
+        // 移除原有点击事件
+        document.querySelectorAll('.grid-item').forEach(item => {
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+        });
+        
+        // 添加新的点击事件
         document.querySelectorAll('.grid-item').forEach(item => {
             item.addEventListener('click', handleCellClick);
         });
@@ -150,6 +253,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = parseInt(gridItem.getAttribute('data-x'));
         const y = parseInt(gridItem.getAttribute('data-y'));
         
+        // 删除模式下的处理
+        if (deleteMode) {
+            if (board[x][y] !== 0) {
+                board[x][y] = 0;
+                updateCellDisplay(x, y);
+                gridItem.classList.add('selected-for-delete');
+                setTimeout(() => {
+                    gridItem.classList.remove('selected-for-delete');
+                }, 300);
+            }
+            return;
+        }
+        
+        // 游戏未开始或暂停状态下，显示图片选择弹窗
+        if (gameState === 'notStarted' || gameState === 'paused') {
+            currentCell = { x, y };
+            showImageModal();
+            return;
+        }
+        
+        // 游戏进行中的正常逻辑
         // 如果单元格为空，不做任何操作
         if (board[x][y] === 0) return;
         
@@ -189,8 +313,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // 显示图片选择弹窗
+    function showImageModal() {
+        // 清空现有内容
+        imagesContainer.innerHTML = '';
+        
+        // 动态加载images目录下的图片
+        // 这里我们模拟11张图片，实际项目中应该动态加载images目录中的文件
+        for (let i = 1; i <= 11; i++) {
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+            
+            const img = document.createElement('img');
+            img.src = `images/${i}.png`;
+            img.alt = `图片 ${i}`;
+            
+            imageItem.appendChild(img);
+            imagesContainer.appendChild(imageItem);
+            
+            // 添加点击事件
+            imageItem.addEventListener('click', () => {
+                selectImageForCell(i);
+            });
+        }
+        
+        // 显示弹窗
+        imageModal.style.display = 'block';
+    }
+    
+    // 为单元格选择图片
+    function selectImageForCell(value) {
+        if (currentCell) {
+            board[currentCell.x][currentCell.y] = value;
+            updateCellDisplay(currentCell.x, currentCell.y);
+            currentCell = null;
+        }
+        
+        // 隐藏弹窗
+        imageModal.style.display = 'none';
+    }
+    
     // 处理键盘事件
     function handleKeyPress(event) {
+        // 只有在游戏进行中才响应键盘移动
+        if (gameState !== 'playing') return;
+        
         let moved = false;
         
         switch(event.key) {

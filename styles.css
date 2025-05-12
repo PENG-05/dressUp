@@ -29,6 +29,8 @@ h1 {
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 5px;
 }
 
 .score {
@@ -210,4 +212,30 @@ button:hover {
     width: 100%;
     height: auto;
     display: block;
+}
+
+.delete-mode {
+    background-color: #e74c3c;
+}
+
+.game-paused .grid-item,
+.game-not-started .grid-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.game-paused .grid-item::after,
+.game-not-started .grid-item::after {
+    content: "+";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: #776e65;
+    opacity: 0.3;
+}
+
+.selected-for-delete {
+    box-shadow: 0 0 10px 3px #e74c3c;
 }
