@@ -239,3 +239,83 @@ button:hover {
 .selected-for-delete {
     box-shadow: 0 0 10px 3px #e74c3c;
 }
+
+/* 游戏板相对定位，使方向指示器能够正确定位 */
+#game-board {
+    position: relative;
+    overflow: visible; /* 允许指示器显示在游戏板外部 */
+}
+
+/* 方向指示器基础样式 */
+.direction-indicator {
+    position: absolute;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+/* 箭头符号样式 */
+.arrow-symbol {
+    font-size: 36px;
+    margin-bottom: 5px;
+    animation: pulse 1.5s infinite alternate;
+}
+
+/* 方向标签样式 */
+.direction-label {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 2px black;
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.2); opacity: 1; }
+}
+
+/* 活动状态 */
+.direction-indicator.active {
+    opacity: 1;
+}
+
+/* 合并高亮样式 */
+.merge-highlight {
+    animation: highlight-pulse 1.5s infinite alternate;
+    box-shadow: 0 0 15px #ffcc00;
+    z-index: 10;
+    position: relative;
+}
+
+@keyframes highlight-pulse {
+    0% { box-shadow: 0 0 10px #ffcc00; }
+    100% { box-shadow: 0 0 20px #ff9900; }
+}
+
+/* 合并箭头样式 */
+.merge-arrow {
+    position: absolute;
+    font-size: 28px;
+    z-index: 15;
+    animation: arrow-pulse 1s infinite;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 0 5px rgba(255, 255, 0, 0.8));
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes arrow-pulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.2); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}

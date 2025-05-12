@@ -251,6 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState === 'playing') {
             updateHint();
         }
+        
+        clearDirectionIndicators();
     }
     
     // 点击格子处理
@@ -456,6 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 移动函数
     function moveUp() {
+        clearDirectionIndicators();
         let moved = false;
         
         for (let col = 0; col < gridSize; col++) {
@@ -483,6 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function moveDown() {
+        clearDirectionIndicators();
         let moved = false;
         
         for (let col = 0; col < gridSize; col++) {
@@ -510,6 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function moveLeft() {
+        clearDirectionIndicators();
         let moved = false;
         
         for (let row = 0; row < gridSize; row++) {
@@ -537,6 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function moveRight() {
+        clearDirectionIndicators();
         let moved = false;
         
         for (let row = 0; row < gridSize; row++) {
@@ -627,12 +633,150 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hint) {
             if (hint.type === "direction") {
                 hintText.textContent = `提示: ${hint.suggestion}`;
+                
+                // 显示方向指示器
+                showDirectionIndicator(hint.direction);
             } else {
                 hintText.textContent = `提示: 考虑将 (${hint.fromX+1}, ${hint.fromY+1}) 的元素与 (${hint.toX+1}, ${hint.toY+1}) 的元素合并`;
+                
+                // 清除方向指示器，然后显示合并指示器
+                clearDirectionIndicators();
+                showMergeIndicator(hint.fromX, hint.fromY, hint.toX, hint.toY);
             }
         } else {
             hintText.textContent = "没有找到最优移动";
+            
+            // 清除方向指示器
+            clearDirectionIndicators();
         }
+    }
+    
+    // 显示方向指示器
+    function showDirectionIndicator(direction) {
+        // 首先清除所有现有指示器
+        clearDirectionIndicators();
+        
+        // 创建方向指示器元素
+        const indicator = document.createElement('div');
+        indicator.className = `direction-indicator ${direction}`;
+        
+        // 根据方向设置指示器内容和位置
+        let arrowSymbol, labelText, position;
+        switch(direction) {
+            case "up":
+                arrowSymbol = '⬆️';
+                labelText = '向上滑动';
+                position = { top: "-60px", left: "50%", transform: "translateX(-50%)" };
+                break;
+            case "down":
+                arrowSymbol = '⬇️';
+                labelText = '向下滑动';
+                position = { bottom: "-60px", left: "50%", transform: "translateX(-50%)" };
+                break;
+            case "left":
+                arrowSymbol = '⬅️';
+                labelText = '向左滑动';
+                position = { left: "-60px", top: "50%", transform: "translateY(-50%)" };
+                break;
+            case "right":
+                arrowSymbol = '➡️';
+                labelText = '向右滑动';
+                position = { right: "-60px", top: "50%", transform: "translateY(-50%)" };
+                break;
+        }
+        
+        // 设置HTML内容和样式
+        indicator.innerHTML = `<div class="arrow-symbol">${arrowSymbol}</div><div class="direction-label">${labelText}</div>`;
+        Object.assign(indicator.style, position);
+        
+        // 将指示器添加到游戏板
+        gameBoard.appendChild(indicator);
+        
+        // 添加闪烁动画效果
+        setTimeout(() => {
+            indicator.classList.add('active');
+        }, 50);
+    }
+    
+    // 显示合并指示器
+    function showMergeIndicator(fromX, fromY, toX, toY) {
+        // 确定合并方向
+        let direction;
+        if (fromX === toX) {
+            direction = fromY < toY ? "right" : "left";
+        } else {
+            direction = fromX < toX ? "down" : "up";
+        }
+        
+        // 高亮显示两个要合并的元素
+        const fromCell = document.querySelector(`.grid-item[data-x="${fromX}"][data-y="${fromY}"]`);
+        const toCell = document.querySelector(`.grid-item[data-x="${toX}"][data-y="${toY}"]`);
+        
+        if (fromCell && toCell) {
+            // 添加高亮样式
+            fromCell.classList.add('merge-highlight');
+            toCell.classList.add('merge-highlight');
+            
+            // 创建连接箭头
+            const arrow = document.createElement('div');
+            arrow.className = `merge-arrow ${direction}`;
+            
+            // 获取单元格位置
+            const fromRect = fromCell.getBoundingClientRect();
+            const toRect = toCell.getBoundingClientRect();
+            const boardRect = gameBoard.getBoundingClientRect();
+            
+            // 计算箭头位置
+            let arrowStyle = {};
+            switch(direction) {
+                case "right":
+                    arrowStyle = {
+                        left: (fromRect.right - boardRect.left + (toRect.left - fromRect.right) / 2) + "px",
+                        top: (fromRect.top - boardRect.top + fromRect.height / 2) + "px"
+                    };
+                    arrow.innerHTML = "➡️";
+                    break;
+                case "left":
+                    arrowStyle = {
+                        left: (fromRect.left - boardRect.left - (fromRect.left - toRect.right) / 2) + "px",
+                        top: (fromRect.top - boardRect.top + fromRect.height / 2) + "px"
+                    };
+                    arrow.innerHTML = "⬅️";
+                    break;
+                case "down":
+                    arrowStyle = {
+                        top: (fromRect.bottom - boardRect.top + (toRect.top - fromRect.bottom) / 2) + "px",
+                        left: (fromRect.left - boardRect.left + fromRect.width / 2) + "px"
+                    };
+                    arrow.innerHTML = "⬇️";
+                    break;
+                case "up":
+                    arrowStyle = {
+                        top: (fromRect.top - boardRect.top - (fromRect.top - toRect.bottom) / 2) + "px",
+                        left: (fromRect.left - boardRect.left + fromRect.width / 2) + "px"
+                    };
+                    arrow.innerHTML = "⬆️";
+                    break;
+            }
+            
+            // 应用样式
+            Object.assign(arrow.style, arrowStyle);
+            arrow.classList.add('direction-indicator'); // 使其可被clearDirectionIndicators清除
+            
+            // 添加到游戏板
+            gameBoard.appendChild(arrow);
+        }
+    }
+    
+    // 清除所有方向指示器
+    function clearDirectionIndicators() {
+        document.querySelectorAll('.direction-indicator, .merge-highlight').forEach(el => {
+            if (el.classList.contains('merge-highlight')) {
+                el.classList.remove('merge-highlight');
+            } else {
+                el.remove();
+            }
+        });
     }
     
     // 寻找最佳移动
