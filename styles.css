@@ -1,0 +1,213 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #faf8ef;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #776e65;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.score {
+    background-color: #bbada0;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+button {
+    background-color: #8f7a66;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #9f8b77;
+}
+
+.hint-text {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #ece4db;
+    border-radius: 3px;
+    min-height: 20px;
+    color: #776e65;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 15px;
+    background-color: #bbada0;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.grid-item {
+    background-color: #cdc1b4;
+    border-radius: 3px;
+    aspect-ratio: 1;
+    position: relative;
+    cursor: pointer;
+}
+
+.item-content {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: all 0.2s ease;
+}
+
+.item-content img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+.selected {
+    box-shadow: 0 0 10px 3px #f65e3b;
+}
+
+.nail-polish {
+    width: 30px;
+    height: 45px;
+    position: relative;
+}
+
+.bottle {
+    width: 30px;
+    height: 30px;
+    background-color: #4dd6bf;
+    border-radius: 5px;
+    position: absolute;
+    bottom: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.cap {
+    width: 15px;
+    height: 15px;
+    background-color: #333;
+    position: absolute;
+    top: 0;
+    left: 7.5px;
+    border-radius: 2px;
+}
+
+.item-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #f9c270;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 添加到现有样式表的末尾 */
+
+/* 弹窗样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 700px;
+    border-radius: 8px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+.images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.image-item {
+    border: 2px solid transparent;
+    border-radius: 5px;
+    padding: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.image-item:hover {
+    border-color: #666;
+    transform: scale(1.05);
+}
+
+.image-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+}

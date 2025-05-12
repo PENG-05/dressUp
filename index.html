@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>装扮游戏</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>装扮合成游戏</h1>
+        <div class="game-info">
+            <div class="score">分数: <span id="score">0</span></div>
+            <button id="new-game">新游戏</button>
+            <button id="hint">提示</button>
+        </div>
+        <div id="hint-text" class="hint-text"></div>
+        <div class="grid" id="game-board">
+            <!-- 第一行 -->
+            <div class="grid-item" data-x="0" data-y="0">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="0" data-y="1">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="0" data-y="2">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="0" data-y="3">
+                <div class="item-content"></div>
+            </div>
+            
+            <!-- 第二行 -->
+            <div class="grid-item" data-x="1" data-y="0">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="1" data-y="1">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="1" data-y="2">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="1" data-y="3">
+                <div class="item-content"></div>
+            </div>
+            
+            <!-- 第三行 -->
+            <div class="grid-item" data-x="2" data-y="0">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="2" data-y="1">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="2" data-y="2">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="2" data-y="3">
+                <div class="item-content"></div>
+            </div>
+            
+            <!-- 第四行 -->
+            <div class="grid-item" data-x="3" data-y="0">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="3" data-y="1">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="3" data-y="2">
+                <div class="item-content"></div>
+            </div>
+            <div class="grid-item" data-x="3" data-y="3">
+                <div class="item-content"></div>
+            </div>
+        </div>        
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
