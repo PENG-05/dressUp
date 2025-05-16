@@ -877,15 +877,22 @@ document.addEventListener('DOMContentLoaded', () => {
             up: 0
         };
         
+        // 标记每个方向是否可以移动
+        let canMove = {
+            right: false,
+            down: false,
+            left: false,
+            up: false
+        };
+        
         // 评估横向移动
         let hasRightMerge = false;
         let hasLeftMerge = false;
         for (let i = 0; i < gridSize; i++) {
             // 检查向右移动是否能合并或移动
-            let canMoveRight = false;
             for (let j = gridSize - 2; j >= 0; j--) {
                 if (board[i][j] !== 0 && (board[i][j+1] === 0 || board[i][j+1] === board[i][j])) {
-                    canMoveRight = true;
+                    canMove.right = true;
                     if (board[i][j+1] === board[i][j]) {
                         hasRightMerge = true;
                         // 给较大数字的合并更高权重
@@ -897,10 +904,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // 检查向左移动是否能合并或移动
-            let canMoveLeft = false;
             for (let j = 1; j < gridSize; j++) {
                 if (board[i][j] !== 0 && (board[i][j-1] === 0 || board[i][j-1] === board[i][j])) {
-                    canMoveLeft = true;
+                    canMove.left = true;
                     if (board[i][j-1] === board[i][j]) {
                         hasLeftMerge = true;
                         directions.left += board[i][j] * 2;
@@ -916,10 +922,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let hasUpMerge = false;
         for (let j = 0; j < gridSize; j++) {
             // 检查向下移动是否能合并或移动
-            let canMoveDown = false;
             for (let i = gridSize - 2; i >= 0; i--) {
                 if (board[i][j] !== 0 && (board[i+1][j] === 0 || board[i+1][j] === board[i][j])) {
-                    canMoveDown = true;
+                    canMove.down = true;
                     if (board[i+1][j] === board[i][j]) {
                         hasDownMerge = true;
                         directions.down += board[i][j] * 2;
@@ -930,10 +935,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // 检查向上移动是否能合并或移动
-            let canMoveUp = false;
             for (let i = 1; i < gridSize; i++) {
                 if (board[i][j] !== 0 && (board[i-1][j] === 0 || board[i-1][j] === board[i][j])) {
-                    canMoveUp = true;
+                    canMove.up = true;
                     if (board[i-1][j] === board[i][j]) {
                         hasUpMerge = true;
                         directions.up += board[i][j] * 2;
@@ -944,38 +948,66 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // 右下角策略加权
-        if (hasLargeNumberInCorner) {
-            // 如果右下角有大数字，优先选择能维持该数字在角落的方向
-            directions.right += 10;
-            directions.down += 10;
-        } else {
-            // 促进向右下角移动的策略
-            directions.right += 5;
-            directions.down += 5;
+        // 检查是否有任何可行的移动
+        if (!canMove.up && !canMove.down && !canMove.left && !canMove.right) {
+            return {
+                suggestion: "当前无法移动，尝试合并相同元素",
+                type: "direction"
+            };
         }
         
-        // 对于小数字(1和2)，增加其合并权重
-        if (hasRightMerge && countSmallNumbers().right > 0) directions.right += 15;
-        if (hasDownMerge && countSmallNumbers().down > 0) directions.down += 15;
-        if (hasLeftMerge && countSmallNumbers().left > 0) directions.left += 5;
-        if (hasUpMerge && countSmallNumbers().up > 0) directions.up += 5;
+        // 为不可移动的方向分配极低的优先级
+        if (!canMove.right) directions.right = -1000;
+        if (!canMove.down) directions.down = -1000;
+        if (!canMove.left) directions.left = -1000;
+        if (!canMove.up) directions.up = -1000;
+        
+        // 右下角策略加权 (只有当该方向可移动时才加权)
+        if (hasLargeNumberInCorner) {
+            // 如果右下角有大数字，优先选择能维持该数字在角落的方向
+            if (canMove.right) directions.right += 10;
+            if (canMove.down) directions.down += 10;
+        } else {
+            // 促进向右下角移动的策略
+            if (canMove.right) directions.right += 5;
+            if (canMove.down) directions.down += 5;
+        }
+        
+        // 对于小数字(1和2)，增加其合并权重 (只有当该方向可移动且有合并时)
+        if (canMove.right && hasRightMerge && countSmallNumbers().right > 0) directions.right += 15;
+        if (canMove.down && hasDownMerge && countSmallNumbers().down > 0) directions.down += 15;
+        if (canMove.left && hasLeftMerge && countSmallNumbers().left > 0) directions.left += 5;
+        if (canMove.up && hasUpMerge && countSmallNumbers().up > 0) directions.up += 5;
         
         // 找出得分最高的方向
-        let bestDirection = "right"; // 默认向右
-        let maxScore = directions.right;
+        let bestDirection = null;
+        let maxScore = -Infinity;
         
-        if (directions.down > maxScore) {
+        // 只考虑可移动的方向
+        if (canMove.right && directions.right > maxScore) {
+            bestDirection = "right";
+            maxScore = directions.right;
+        }
+        if (canMove.down && directions.down > maxScore) {
             bestDirection = "down";
             maxScore = directions.down;
         }
-        if (directions.left > maxScore) {
+        if (canMove.left && directions.left > maxScore) {
             bestDirection = "left";
             maxScore = directions.left;
         }
-        if (directions.up > maxScore) {
+        if (canMove.up && directions.up > maxScore) {
             bestDirection = "up";
             maxScore = directions.up;
+        }
+        
+        // 防止没有找到最佳方向的情况
+        if (bestDirection === null) {
+            // 找出任何可移动的方向
+            if (canMove.right) bestDirection = "right";
+            else if (canMove.down) bestDirection = "down";
+            else if (canMove.left) bestDirection = "left";
+            else if (canMove.up) bestDirection = "up";
         }
         
         // 返回具体的方向指示
@@ -993,6 +1025,61 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
+    // 新增：检查是否可以向指定方向移动的辅助函数
+    function canMoveInDirection(direction) {
+        switch(direction) {
+            case 'up':
+                for (let col = 0; col < gridSize; col++) {
+                    for (let row = 1; row < gridSize; row++) {
+                        if (board[row][col] !== 0) {
+                            // 可以向上移入空格或合并相同值
+                            if (board[row-1][col] === 0 || board[row-1][col] === board[row][col]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'down':
+                for (let col = 0; col < gridSize; col++) {
+                    for (let row = gridSize - 2; row >= 0; row--) {
+                        if (board[row][col] !== 0) {
+                            // 可以向下移入空格或合并相同值
+                            if (board[row+1][col] === 0 || board[row+1][col] === board[row][col]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'left':
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = 1; col < gridSize; col++) {
+                        if (board[row][col] !== 0) {
+                            // 可以向左移入空格或合并相同值
+                            if (board[row][col-1] === 0 || board[row][col-1] === board[row][col]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'right':
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = gridSize - 2; col >= 0; col--) {
+                        if (board[row][col] !== 0) {
+                            // 可以向右移入空格或合并相同值
+                            if (board[row][col+1] === 0 || board[row][col+1] === board[row][col]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
+        }
+        return false;
+    }
+
     // 计算每个方向上的小数字(1和2)数量
     function countSmallNumbers() {
         let counts = {
